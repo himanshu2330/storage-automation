@@ -1,0 +1,19 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files:
+      - all.yaml
+  tasks:
+  - name: Get array information
+    uri:
+      url: "{{ unisphere_url }}/univmax/restapi/system/symmetrix"
+      method: GET
+      validate_certs: no
+      user: "{{ Username }}"
+      password: "{{ Password }}"
+      force_basic_auth: yes
+      status_code: 201,200
+    register: array_details
+  - debug:
+        msg="{{ array_details }}"
