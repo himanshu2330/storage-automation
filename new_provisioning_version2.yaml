@@ -2,9 +2,6 @@
 - hosts: localhost
   connection: local
   gather_facts: no
-  vars_files:
-      - variable.yaml
-      - static_variable.yaml
   vars:
     initiator: []
     portdetails: []
