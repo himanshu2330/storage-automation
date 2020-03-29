@@ -42,7 +42,7 @@
 
 
   - name: test command
-    shell: cat /opt/final_task/himanshu.txt |  awk -F ":" '{if ($3 == "{{ item }}") print $0;}' | head -1
+    shell: cat himanshu.txt |  awk -F ":" '{if ($3 == "{{ item }}") print $0;}' | head -1
     register: test123
     with_items:
       - "{{ init }}"
