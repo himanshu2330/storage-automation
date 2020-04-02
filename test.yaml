@@ -1,0 +1,87 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files: "{{ myvarfile }}"
+  vars:
+    initiator: []
+    portdetails: []
+    wwn: []
+    rename_wwn: []
+  tasks:
+  - name: initiator details
+    uri:
+      url: "{{ unisphere_url }}/univmax/restapi/90/sloprovisioning/symmetrix/{{ symmetrixId }}/initiator?initiator_hba={{ item }}"
+      method: GET
+      validate_certs: no
+      user: "{{ Username }}"
+      password: "{{ Password }}"
+      force_basic_auth: yes
+      status_code: 201,200
+    register: initiator_details
+    with_items:
+      - "{{ init }}"
+  - name: list of wwn
+    debug:
+      msg: "{{ initiator_details.results|map(attribute='json.initiatorId')|list }}"
+
+
+  - name: testing the list
+    set_fact:
+      wwn: "{{ wwn }} + [ '{{ item }}' ]"
+    with_items: "{{ initiator_details.results|map(attribute='json.initiatorId')|list }}"
+
+  - name: print wwn
+    debug: var=wwn
+
+ # - name: Run a script
+ #   script: him.sh
+ #   register: test
+ # - name: print script result
+ #   debug:
+ #     msg: "{{ test.stdout_lines }}"
+
+
+  - name: test command
+    shell: cat himanshu.txt |  awk -F ":" '{if ($3 == "{{ item }}") print $0;}' | head -1
+    register: test123
+    with_items:
+      - "{{ init }}"
+  - name: print output
+    debug:
+      msg: "{{ test123.results|map(attribute='stdout_lines') | list }}"
+
+  - name: creating rename_wwn
+    set_fact:
+      rename_wwn: "{{ rename_wwn }} + [ '{{ item }}' ]"
+    with_items: "{{ test123.results|map(attribute='stdout_lines') | list }}"
+
+  - name: printing rename_wwn
+    debug:
+      msg: "{{ rename_wwn }}"
+
+  - name: Rename initiator
+    uri:
+      url: "{{ unisphere_url }}/univmax/restapi/90/sloprovisioning/symmetrix/{{ symmetrixId }}/initiator/{{ item.0 }}"
+      method: PUT
+      validate_certs: no
+      user: "{{ Username }}"
+      password: "{{ Password }}"
+      force_basic_auth: yes
+      status_code: 201,200
+      body_format: json
+      body:
+        {
+        "editInitiatorActionParam": {
+        "renameAliasParam": {
+        "port_name": "{{ item.1 }}",
+        "node_name": "{{ hostname }}"
+        }
+        }
+        }
+    register: initiator_renaming
+    with_together:
+      - "{{ rename_wwn }}"
+      - "{{ alias_port  }}"
+  - debug:
+        msg: "{{ initiator_renaming }}"
